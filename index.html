@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HCP Voice Onboarding AI — Khira Warford</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  :root {
+    --bg:#ffffff;--bg2:#f7f7f5;--bg3:#f0eeea;
+    --bg-info:#e6f1fb;--bg-success:#eaf3de;--bg-warn:#faeeda;--bg-amber:#faeeda;
+    --text:#1a1a18;--text2:#6b6a66;--text3:#9b9a96;
+    --text-info:#0c447c;--text-success:#27500a;--text-amber:#633806;
+    --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+    --border-info:rgba(12,68,124,0.3);--border-success:rgba(39,80,10,0.3);--border-amber:rgba(99,56,6,0.3);
+    --radius:8px;--radius-lg:12px;
+    --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'Menlo','Consolas',monospace;
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#1c1c1a;--bg2:#242422;--bg3:#2c2c2a;
+      --bg-info:#042c53;--bg-success:#173404;--bg-amber:#412402;
+      --text:#f0eeea;--text2:#a0a09a;--text3:#686864;
+      --text-info:#85b7eb;--text-success:#97c459;--text-amber:#fac775;
+      --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.18);
+      --border-info:rgba(133,183,235,0.3);--border-success:rgba(151,196,89,0.3);--border-amber:rgba(250,199,117,0.3);
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font);background:var(--bg3);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px;}
+  #app{width:100%;max-width:720px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 32px);max-height:860px;box-shadow:0 2px 16px rgba(0,0,0,0.08);}
+  #hdr{display:flex;align-items:center;gap:11px;padding:12px 16px;border-bottom:0.5px solid var(--border);background:var(--bg2);flex-shrink:0;}
+  #hdr-ic{width:34px;height:34px;border-radius:50%;background:var(--bg-info);display:flex;align-items:center;justify-content:center;color:var(--text-info);font-size:16px;flex-shrink:0;}
+  #hdr-tx h3{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;}
+  #hdr-tx p{font-size:11px;color:var(--text2);}
+  #hdr-dot{width:7px;height:7px;border-radius:50%;background:#639922;border:1.5px solid #3b6d11;margin-left:auto;flex-shrink:0;}
+  #new-call-btn{font-size:11px;color:var(--text-info);border:0.5px solid var(--border-info);background:var(--bg-info);cursor:pointer;padding:4px 9px;border-radius:var(--radius);font-family:var(--font);font-weight:500;margin-left:8px;}
+  #new-call-btn:hover{opacity:0.8;}
+  #clr-btn{font-size:11px;color:var(--text3);border:0.5px solid var(--border);background:none;cursor:pointer;padding:4px 9px;border-radius:var(--radius);font-family:var(--font);}
+  #clr-btn:hover{background:var(--bg2);color:var(--text2);}
+  #tabs{display:flex;border-bottom:0.5px solid var(--border);background:var(--bg2);flex-shrink:0;}
+  .tab{flex:1;padding:9px 4px;font-size:11px;font-weight:500;color:var(--text2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;font-family:var(--font);transition:color .15s,border-color .15s;}
+  .tab.active{color:var(--text-info);border-bottom-color:var(--text-info);}
+  .tab:hover:not(.active){color:var(--text);}
+  #panels{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+  .panel{display:none;flex:1;overflow-y:auto;flex-direction:column;}
+  .panel.active{display:flex;}
+  /* Chat */
+  #chat-panel{padding:0;gap:0;overflow:hidden;}
+  #chips{display:flex;gap:6px;padding:8px 14px;border-bottom:0.5px solid var(--border);overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+  #chips::-webkit-scrollbar{display:none;}
+  .chip{flex-shrink:0;font-size:11px;padding:5px 11px;border-radius:18px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;white-space:nowrap;font-family:var(--font);transition:background .15s;}
+  .chip:hover{background:var(--bg2);color:var(--text);}
+  #msgs{flex:1;overflow-y:auto;padding:14px 15px;display:flex;flex-direction:column;gap:12px;}
+  .mr{display:flex;gap:8px;align-items:flex-start;}
+  .mr.user{flex-direction:row-reverse;}
+  .mav{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px;}
+  .mav.ai{background:var(--bg-info);color:var(--text-info);}
+  .mav.user{background:var(--bg2);color:var(--text2);}
+  .mb{max-width:82%;padding:9px 13px;font-size:13px;line-height:1.65;color:var(--text);font-family:var(--font);}
+  .mb.ai{background:var(--bg2);border-radius:4px 14px 14px 14px;border:0.5px solid var(--border);}
+  .mb.user{background:var(--bg-info);color:var(--text-info);border-radius:14px 4px 14px 14px;}
+  #typ{display:none;gap:8px;align-items:flex-start;padding:0 15px 8px;}
+  .tdots{display:flex;gap:4px;padding:10px 13px;background:var(--bg2);border-radius:4px 14px 14px 14px;border:0.5px solid var(--border);}
+  .d{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:bnc 1.2s infinite;}
+  .d:nth-child(2){animation-delay:.2s;}.d:nth-child(3){animation-delay:.4s;}
+  @keyframes bnc{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+  #ibar{display:flex;gap:8px;padding:10px 14px;border-top:0.5px solid var(--border);background:var(--bg2);flex-shrink:0;align-items:flex-end;}
+  #inp{flex:1;border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px 12px;font-size:13px;resize:none;min-height:36px;max-height:100px;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.5;overflow-y:auto;}
+  #inp:focus{outline:none;border-color:var(--text-info);}
+  #inp::placeholder{color:var(--text3);}
+  #sbtn{width:36px;height:36px;border-radius:var(--radius);background:var(--bg-info);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-info);font-size:16px;flex-shrink:0;}
+  #sbtn:hover{opacity:.8;}#sbtn:disabled{opacity:.4;cursor:not-allowed;}
+  /* Generate */
+  #gen-panel{padding:14px 16px;gap:11px;}
+  .calltype-row{display:flex;gap:8px;}
+  .ct-btn{flex:1;padding:10px 8px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;text-align:center;font-family:var(--font);transition:all .15s;}
+  .ct-btn.selected{background:var(--bg-info);color:var(--text-info);border-color:var(--border-info);}
+  .ct-btn i{display:block;margin:0 auto 4px;font-size:16px;}
+  .follow-only{display:none!important;}.follow-only.show{display:flex!important;}
+  .gf{display:flex;flex-direction:column;gap:4px;}
+  .gf label{font-size:11px;font-weight:500;color:var(--text2);}
+  .gf input,.gf select,.gf textarea{font-size:13px;font-family:var(--font);color:var(--text);background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px 10px;}
+  .gf input:focus,.gf select:focus,.gf textarea:focus{outline:none;border-color:var(--text-info);}
+  .gf textarea{resize:vertical;min-height:62px;}
+  .gr{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  #gen-btn{width:100%;padding:11px;border-radius:var(--radius);background:var(--bg-info);color:var(--text-info);border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:opacity .15s;}
+  #gen-btn:hover{opacity:.8;}#gen-btn:disabled{opacity:.4;cursor:not-allowed;}
+  #gen-st{font-size:12px;color:var(--text2);text-align:center;min-height:18px;}
+  /* Transcript */
+  #tx-panel{padding:14px 16px;gap:12px;}
+  .tx-hint{font-size:12px;color:var(--text2);line-height:1.6;background:var(--bg-amber);border:0.5px solid var(--border-amber);border-radius:var(--radius);padding:10px 13px;color:var(--text-amber);}
+  #tx-area{width:100%;min-height:200px;max-height:320px;resize:vertical;font-size:12px;font-family:var(--mono);color:var(--text);background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);padding:10px 12px;line-height:1.6;}
+  #tx-area:focus{outline:none;border-color:var(--text-info);}
+  #tx-area::placeholder{color:var(--text3);font-family:var(--font);font-size:13px;}
+  .tx-meta{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  #tx-btn{width:100%;padding:11px;border-radius:var(--radius);background:var(--bg-amber);color:var(--text-amber);border:0.5px solid var(--border-amber);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:opacity .15s;}
+  #tx-btn:hover{opacity:.8;}#tx-btn:disabled{opacity:.4;cursor:not-allowed;}
+  #tx-st{font-size:12px;color:var(--text2);text-align:center;min-height:18px;}
+  /* Outputs */
+  #out-panel{padding:14px 16px;gap:14px;}
+  .os{display:flex;flex-direction:column;gap:6px;}
+  .ol{display:flex;align-items:center;justify-content:space-between;}
+  .ol span{font-size:12px;font-weight:500;color:var(--text2);}
+  .cp{font-size:11px;padding:4px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;font-family:var(--font);}
+  .cp:hover{background:var(--bg2);}
+  .cp.done{color:var(--text-success);border-color:var(--border-success);}
+  .ob{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px;font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;font-family:var(--mono);max-height:230px;overflow-y:auto;}
+  #out-ph{font-size:13px;color:var(--text3);text-align:center;padding:40px 20px;line-height:1.7;}
+  #out-ct{display:none;flex-direction:column;gap:14px;}
+  .out-source-badge{font-size:11px;color:var(--text3);margin-bottom:2px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr">
+    <div id="hdr-ic"><i class="ti ti-headset"></i></div>
+    <div id="hdr-tx">
+      <h3>HCP Voice Onboarding AI</h3>
+      <p id="hdr-sub">Khira Warford · Ready for a call</p>
+    </div>
+    <div id="hdr-dot"></div>
+    <button id="new-call-btn" onclick="newCall()"><i class="ti ti-refresh" style="font-size:12px;vertical-align:-1px;margin-right:3px;"></i>New call</button>
+    <button id="clr-btn" onclick="clearChat()">Clear chat</button>
+  </div>
+
+  <div id="tabs">
+    <button class="tab active" onclick="switchTab('chat')"><i class="ti ti-message-circle" style="font-size:13px;vertical-align:-2px;margin-right:3px;"></i>Chat</button>
+    <button class="tab" onclick="switchTab('gen')"><i class="ti ti-file-text" style="font-size:13px;vertical-align:-2px;margin-right:3px;"></i>Generate docs</button>
+    <button class="tab" onclick="switchTab('tx')"><i class="ti ti-file-upload" style="font-size:13px;vertical-align:-2px;margin-right:3px;"></i>Transcript</button>
+    <button class="tab" onclick="switchTab('out')"><i class="ti ti-copy" style="font-size:13px;vertical-align:-2px;margin-right:3px;"></i>Outputs</button>
+  </div>
+
+  <div id="panels">
+
+    <!-- CHAT -->
+    <div class="panel active" id="chat-panel">
+      <div id="chips">
+        <button class="chip" onclick="sc('Walk me through the full VoIP onboarding call flow step by step')">Full call walkthrough</button>
+        <button class="chip" onclick="sc('What should I cover on a VoIP follow-up call when initial setup is done?')">Follow-up agenda</button>
+        <button class="chip" onclick="sc('What are common porting issues and how do I handle them?')">Porting troubleshooting</button>
+        <button class="chip" onclick="sc('How do I set up simul-ring vs call forwarding in HCP Voice?')">Simul-ring vs forward</button>
+        <button class="chip" onclick="sc('What are the cell phone porting warnings I must give clients?')">Cell porting warnings</button>
+        <button class="chip" onclick="sc('What should I check in Salesforce before a VoIP onboarding call?')">Pre-call prep</button>
+        <button class="chip" onclick="sc('How do I handle a client migrating from Podium to HCP Voice?')">Podium migration</button>
+        <button class="chip" onclick="sc('Give me a script for explaining call masking to a client')">Call masking script</button>
+        <button class="chip" onclick="sc('How does CSR AI integrate with the HCP Voice call flow?')">CSR AI + Voice</button>
+      </div>
+      <div id="msgs">
+        <div class="mr">
+          <div class="mav ai"><i class="ti ti-headset"></i></div>
+          <div class="mb ai">Hey Khira! Ready for your next call. Use <strong>Chat</strong> for live help during the session, <strong>Generate docs</strong> to fill out the form manually after the call, or <strong>Transcript</strong> to paste your Zoom transcript and auto-generate all 3 documents. Hit <strong>New call</strong> to reset between clients.</div>
+        </div>
+      </div>
+      <div id="typ">
+        <div class="mav ai" style="margin-left:0"><i class="ti ti-headset"></i></div>
+        <div class="tdots"><div class="d"></div><div class="d"></div><div class="d"></div></div>
+      </div>
+      <div id="ibar">
+        <textarea id="inp" placeholder="Ask about onboarding, VoIP, HCP features, scripts..." rows="1"></textarea>
+        <button id="sbtn" aria-label="Send"><i class="ti ti-send"></i></button>
+      </div>
+    </div>
+
+    <!-- GENERATE -->
+    <div class="panel" id="gen-panel">
+      <div style="font-size:12px;color:var(--text2);padding-bottom:2px;">Select call type — the form adjusts automatically.</div>
+      <div class="calltype-row">
+        <button class="ct-btn selected" id="ct-welcome" onclick="setCallType('welcome')"><i class="ti ti-phone-plus"></i>Welcome call</button>
+        <button class="ct-btn" id="ct-followup" onclick="setCallType('followup')"><i class="ti ti-phone-call"></i>VoIP follow-up call</button>
+      </div>
+      <div class="gr">
+        <div class="gf"><label>Business name</label><input id="g-biz" placeholder="e.g. Affinity Plumbing"></div>
+        <div class="gf"><label>Pro / primary contact</label><input id="g-pro" placeholder="e.g. Kami & Clay"></div>
+      </div>
+      <div class="gr">
+        <div class="gf"><label>Org ID</label><input id="g-org" placeholder="#####"></div>
+        <div class="gf"><label>Date</label><input id="g-date" type="date"></div>
+      </div>
+      <div class="gr">
+        <div class="gf"><label>HCP plan</label><select id="g-plan"><option>Max</option><option>Essentials</option><option>Basic</option></select></div>
+        <div class="gf"><label>Voice plan</label><select id="g-voice"><option>VoIP + Call Tracking</option><option>VoIP Only</option><option>Call Tracking Only</option></select></div>
+      </div>
+      <div class="gr">
+        <div class="gf"><label>Time zone</label><select id="g-tz"><option>CT</option><option>ET</option><option>MT</option><option>PT</option></select></div>
+        <div class="gf"><label>Porting situation</label>
+          <select id="g-port">
+            <option>Porting from VoIP</option><option>Porting cell (advised against)</option>
+            <option>New number only</option><option>Already ported</option>
+            <option>Porting from Podium</option><option>Porting complete</option><option>N/A</option>
+          </select>
+        </div>
+      </div>
+      <div class="gf"><label>Who was on the call</label><input id="g-who" placeholder="e.g. Khira Warford, Kami (owner), Clay (office mgr)"></div>
+      <div class="gf follow-only" id="fo-session" style="flex-direction:column;gap:4px;">
+        <label>Follow-up session number</label>
+        <select id="g-session"><option value="2">Follow-up #1 (session 2)</option><option value="3">Follow-up #2 (session 3)</option><option value="4">Follow-up #3 (session 4)</option><option value="5">Follow-up #4 (session 5)</option></select>
+      </div>
+      <div class="gf follow-only" id="fo-prev" style="flex-direction:column;gap:4px;">
+        <label>What was set up in prior session(s)</label>
+        <textarea id="g-prev" placeholder="e.g. Session 1: built call flow, simul-ring, tested calls. Porting docs submitted."></textarea>
+      </div>
+      <div class="gf follow-only" id="fo-out" style="flex-direction:column;gap:4px;">
+        <label>Outstanding items coming into this call</label>
+        <textarea id="g-outstanding" placeholder="e.g. Custom voicemail recording, CSR AI forward step, ring group for after-hours"></textarea>
+      </div>
+      <div class="gf"><label>What was covered / key wins / customizations this session</label>
+        <textarea id="g-notes" placeholder="e.g. Created individual Voice numbers for each tech, built call flows, tested inbound/outbound."></textarea>
+      </div>
+      <div class="gf"><label>Homework assigned to pro</label>
+        <textarea id="g-hw" placeholder="e.g. Verify Voice permissions for all techs, complete test calls, create custom voicemail recordings"></textarea>
+      </div>
+      <div class="gf"><label>Setup status</label>
+        <select id="g-status"><option>Fully complete</option><option>Partial — follow-up required</option><option>Porting in progress</option><option>Rescheduled</option><option>No-show</option></select>
+      </div>
+      <div class="gf"><label>Issues, escalations, or pro sentiment (optional)</label>
+        <textarea id="g-issues" placeholder="Leave blank if none"></textarea>
+      </div>
+      <button id="gen-btn" onclick="generateDocs()"><i class="ti ti-sparkles" style="font-size:14px;vertical-align:-2px;margin-right:5px;"></i>Generate all 3 documents</button>
+      <div id="gen-st"></div>
+    </div>
+
+    <!-- TRANSCRIPT -->
+    <div class="panel" id="tx-panel">
+      <div class="tx-hint">
+        <i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px;margin-right:5px;"></i>
+        Paste your full Zoom transcript below. The AI will read it and automatically generate all 3 documents — no form-filling needed. Add any extra context (org ID, HCP plan, porting situation) in the fields below to help it be more accurate.
+      </div>
+      <div class="gf"><label>Zoom transcript</label>
+        <textarea id="tx-area" placeholder="Paste your full Zoom transcript here...&#10;&#10;e.g.:&#10;00:00:05 Khira Warford: Hey, good afternoon! I'm going to go ahead and start the Zoom recording...&#10;00:00:12 John Smith: Sounds good, thanks for having me..."></textarea>
+      </div>
+      <div style="font-size:11px;font-weight:500;color:var(--text2);margin-top:2px;">Optional — helps fill in fields the transcript may not include</div>
+      <div class="tx-meta">
+        <div class="gf"><label>Org ID (if known)</label><input id="tx-org" placeholder="#####"></div>
+        <div class="gf"><label>HCP plan</label><select id="tx-plan"><option>Max</option><option>Essentials</option><option>Basic</option></select></div>
+        <div class="gf"><label>Voice plan</label><select id="tx-voice"><option>VoIP + Call Tracking</option><option>VoIP Only</option><option>Call Tracking Only</option></select></div>
+        <div class="gf"><label>Call type</label>
+          <select id="tx-calltype">
+            <option value="welcome">Welcome call</option>
+            <option value="followup2">VoIP follow-up #1 (session 2)</option>
+            <option value="followup3">VoIP follow-up #2 (session 3)</option>
+            <option value="followup4">VoIP follow-up #3 (session 4)</option>
+          </select>
+        </div>
+      </div>
+      <button id="tx-btn" onclick="generateFromTranscript()"><i class="ti ti-wand" style="font-size:14px;vertical-align:-2px;margin-right:5px;"></i>Generate all 3 documents from transcript</button>
+      <div id="tx-st"></div>
+    </div>
+
+    <!-- OUTPUTS -->
+    <div class="panel" id="out-panel">
+      <div id="out-ph">Generate documents using the <strong>Generate docs</strong> tab (manual form) or the <strong>Transcript</strong> tab (paste your Zoom transcript) — all 3 outputs appear here, ready to copy.</div>
+      <div id="out-ct">
+        <div class="out-source-badge" id="out-source"></div>
+        <div class="os">
+          <div class="ol"><span><i class="ti ti-notes" style="font-size:13px;vertical-align:-2px;margin-right:5px;"></i>Call notes (filled)</span><button class="cp" onclick="doCopy('ob-notes',this)">Copy</button></div>
+          <div class="ob" id="ob-notes"></div>
+        </div>
+        <div class="os">
+          <div class="ol"><span><i class="ti ti-building" style="font-size:13px;vertical-align:-2px;margin-right:5px;"></i>Salesforce CRM packet</span><button class="cp" onclick="doCopy('ob-sf',this)">Copy</button></div>
+          <div class="ob" id="ob-sf"></div>
+        </div>
+        <div class="os">
+          <div class="ol"><span><i class="ti ti-mail" style="font-size:13px;vertical-align:-2px;margin-right:5px;"></i>Pro-facing recap email</span><button class="cp" onclick="doCopy('ob-email',this)">Copy</button></div>
+          <div class="ob" id="ob-email"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const CHAT_SYS=`You are an expert HCP Voice Onboarding AI built for Khira Warford, a VoIP-trained Housecall Pro onboarding specialist. Deep expertise in:
+
+HCP PLATFORM: Max/Essentials/Basic plans, full feature set, onboarding sequence, QuickBooks/Mailchimp/Angi/Google integrations, Customer Portal, automated follow-ups, review requests, Pipeline, Payroll, CSR AI, HCP Assist, Profit Rhino, Marketing Center.
+
+VOIP & VOICE: Call tracking numbers, dedicated local/toll-free numbers, call recording (inbound & outbound — no consent needed, just inform the pro the Zoom is being recorded), VoIP troubleshooting (dropped calls, echo, latency, audio quality), network requirements (bandwidth, QoS), number porting from any carrier including Podium, missed call text-back, simultaneous ring vs call forwarding, ring groups (up to 10 employees), IVR/Call Menu (max 5 options), call masking, call queue (Advanced/Premium only), audio library (MP3 <5MB), Zamzar for file conversion, Twilio identity verification, CNAM caller ID (15-char limit), LOA requirements, porting timeline (1-3 weeks, 8:30 AM PST cutover, ~1hr downtime).
+
+KHIRA'S WORKFLOW: Pre-call Salesforce prep, call sections (Open & Set Expectations → Get Started Checklist → Porting → Call Flow → Test Call → Wrap Up), post-call Salesforce tasks. Critical warnings: no steps = call disconnects (always voicemail fallback), one number per call flow, use employee cell phone selector not typed number, do NOT cancel carrier until port 100% complete.
+
+FOLLOW-UP CALLS: Focus on outstanding items, homework check-in, advanced features (ring groups, IVR, reporting, CSR AI integration, call masking for techs, missed call auto-text), porting status.
+
+Tone: professional, practical, direct. Clear answers, step-by-step guidance, ready-to-use scripts, troubleshooting steps.`;
+
+const GEN_SYS=`You generate onboarding documentation for Khira Warford, VoIP-trained Housecall Pro onboarding specialist. Produce exactly three documents separated by these exact markers:
+===CALL_NOTES===
+===SALESFORCE===
+===EMAIL===
+
+RECORDING: Never include consent language. Just note the pro was informed the Zoom would be recorded.
+
+WELCOME CALL docs: Full 6-section call notes. SF subject "DATE VoIP Onboarding Call - ATTND". Intro-tone email.
+FOLLOW-UP CALL docs: Abbreviated notes focused on outstanding items resolved. SF subject "DATE VoIP Follow-Up Call #N - ATTND". Continuation-momentum email.
+
+DOCUMENT 1 — CALL NOTES (Welcome Call):
+VoIP / Voice Add-On Onboarding Call Notes — Welcome Call
+HouseCall Pro — Internal Use Only
+Onboarding Rep: Khira Warford
+
+PRO & SESSION DETAILS
+[fill all fields]
+
+PRE-CALL PREP
+✓ Upgrade Onboarding Case found in Salesforce — Case Owner set to Khira Warford
+✓ Demo record found (VoIP + Call Tracking)
+✓ Admin panel confirmed — VoIP / Call Tracking showing on account
+[porting status line]
+✓ Pro's Voice settings reviewed
+
+SECTION 1 — OPEN & SET EXPECTATIONS (~5 min)
+✓ Introduced self as Voice Onboarding Specialist
+✓ Informed pro that Zoom session will be recorded
+✓ Asked if pro has used VoIP before — gauged starting point
+✓ Set agenda: overview → porting → call flow setup → tips & tricks
+✓ Confirmed EIN info
+[Opening notes from transcript/input]
+
+SECTION 2 — GET STARTED CHECKLIST (~10 min)
+Step 1 — Get Your Number: [fill]
+Step 2 — Test Your System: [browser permissions, test notification, mic test]
+Step 3 — Meet Your Dialer: [dialer tour, confirm clicked]
+
+SECTION 3 — PORTING CONVERSATION (~10 min)
+Porting Situation: [fill]
+[relevant steps and warnings]
+⚠ Do NOT cancel carrier service until port is 100% complete — reminder given
+
+SECTION 4 — BUILD THE CALL FLOW (~15 min)
+[items covered with checkmarks, customizations]
+Call flow notes: [details]
+
+SECTION 5 — TEST CALL & WEB DIALER DEMO (~5 min)
+✓ Web dialer opened — pro status set to Available
+✓ Test call placed to main business line
+✓ Customer Intake Form walked through
+✓ Call logged — directed to Inbox
+✓ Call recording accessed
+✓ Reporting walked through: call conversions, call reason, lead source
+✓ Call masking explained
+✓ Missed call auto-text reviewed
+
+SECTION 6 — WRAP UP & NEXT STEPS (~5 min)
+[homework and next steps]
+
+POST-CALL SALESFORCE TASKS
+☐ Demo record updated — set to Attended + Attended Time filled in
+☐ All Value Added Products set to No
+☐ Case status updated to Closed
+☐ Call notes entered — Subject: [DATE] VoIP Onboarding Call - ATTND
+☐ Post-call recap email sent
+
+SETUP STATUS: [fill]
+ISSUES/FLAGS: [fill or None]
+
+DOCUMENT 1 — CALL NOTES (Follow-Up Call):
+VoIP / Voice Add-On — Follow-Up Call #[N] Notes
+HouseCall Pro — Internal Use Only
+Onboarding Rep: Khira Warford
+
+PRO & SESSION DETAILS
+[fill all fields]
+
+PRE-CALL REVIEW
+✓ Prior session notes reviewed
+✓ Porting status checked: [fill]
+✓ Outstanding items identified
+Outstanding items entering this call: [list]
+
+HOMEWORK CHECK-IN
+[completion status]
+
+THIS SESSION — WHAT WAS COVERED
+[bullet each topic with checkmarks, customizations, wins]
+
+CALL FLOW UPDATES (if any): [changes]
+PORTING UPDATE (if applicable): [status]
+
+WRAP UP & NEXT STEPS
+[homework and next steps]
+
+POST-CALL SALESFORCE TASKS
+☐ Demo record updated — Attended + time filled in
+☐ All Value Added Products set to No
+☐ Case status updated
+☐ Call notes entered — Subject: [DATE] VoIP Follow-Up Call #[N] - ATTND
+☐ Recap email sent
+
+SETUP STATUS: [fill]
+ISSUES/FLAGS: [fill or None]
+
+DOCUMENT 2 — SALESFORCE CRM PACKET:
+📌 BUSINESS NAME: [fill]
+Org ID: [fill] | Plan: [fill] | Voice Plan: [fill] | TZ: [fill]
+Add-Ons: VoIP ✓ | Call Tracking ✓
+Call Type: [Welcome Call / VoIP Follow-Up Call #N]
+
+👥 CONTACTS ON CALL:
+[list each person and role]
+
+📞 SESSION SUMMARY — [DATE]
+Rep: Khira Warford
+[For follow-up: Prior session(s): [brief summary]]
+[For follow-up: OUTSTANDING ITEMS ENTERING THIS CALL: [list]]
+
+WHAT WAS COVERED:
+• [bullets]
+
+PORTING STATUS: [fill]
+SETUP STATUS: [fill]
+
+📌 HOMEWORK ASSIGNED:
+• [list]
+
+⚠️ FLAGS / ISSUES: [fill or None]
+
+ACTION ITEMS:
+1. [item] — Owner: [Pro or Khira] — Due: [timeframe]
+2. [item] — Owner: [Pro or Khira] — Due: [timeframe]
+
+NEXT STEPS: [fill]
+Case Notes Subject: [DATE] VoIP [Onboarding/Follow-Up Call #N] - ATTND
+
+DOCUMENT 3 — PRO-FACING RECAP EMAIL (Welcome Call):
+Subject: Your Housecall Pro Voice Setup Recap
+
+Hi [pro name],
+
+[Warm opener — first Voice session, what the focus was.]
+
+⚙️ What We Covered
+[bullet list]
+
+🏆 --- Your Win From Today ---
+[Specific milestone or win. Use any client quote from transcript if available. Personal and motivating.]
+
+💪 Homework
+[bullet list]
+
+📚 Helpful Resources
+
+📞 Voice
+• Access your Voice Settings
+• Configure your Call Flow
+• Audio Library
+• Ring Groups
+• Recording Calls
+• Call Masking
+• Voice on Mobile
+• Block Phone Numbers
+• Customer Intake Form
+
+📊 Call Tracking
+• Set up Call Tracking Phone Numbers
+
+📱 Voice on Mobile
+• Configure your mobile device for calls
+• Receiving an Inbound Call
+• Making an Outbound Call
+
+🛠️ Additional Resources
+• Hardware & Browser Recommendations for Voice
+• Internet Bandwidth Guide for Voice
+• Convert greeting/voicemail files to MP3: Zamzar — https://www.zamzar.com
+
+🎥 Zoom Recording
+Recording: [Add link]
+Passcode: [Add passcode]
+
+🌎 Support Ecosystem
+💬 In-app Help AI — 24/7 (Blue Chat Bubble, bottom right)
+📞 (877) 944-9010 | Mon–Fri, 5 AM–5 PM PST
+💬 Facebook Community: https://www.facebook.com/groups/HousecallPros/
+🎓 Pro Power Hour — Thursdays 2 PM PST / 5 PM EST
+
+💙 Core Values We Saw Today
+• We Help Pros Succeed — [specific to their session]
+• Relentless Innovation — [specific to what they explored]
+• Operate with Discipline and Rigor — [specific to how they worked]
+
+💬 [Forward-looking close referencing their stated goal or next step.]
+
+Have a great week!
+Khira Warford
+Voice Onboarding Specialist | Housecall Pro
+khira.warford@housecallpro.com
+
+DOCUMENT 3 — PRO-FACING RECAP EMAIL (Follow-Up Call):
+Subject: Your Housecall Pro Voice Follow-Up Recap — Session [N]
+
+Hi [pro name],
+
+[Warm continuation opener — reference momentum from last session and today's focus. Energetic.]
+
+✅ Outstanding Items We Tackled Today
+[bullet list of resolved items]
+
+⚙️ What We Covered This Session
+[bullet list]
+
+🏆 --- Your Win From Today ---
+[Specific win. Use any client quote from transcript if available. Celebrate progress.]
+
+💪 Homework
+[bullet list — or "You're all set — no additional homework!" if complete]
+
+📞 Voice — Quick References
+[2-3 most relevant links based on what was covered]
+
+🛠️ Additional Resources
+• Convert greeting/voicemail files to MP3: Zamzar — https://www.zamzar.com
+
+🎥 Zoom Recording
+Recording: [Add link]
+Passcode: [Add passcode]
+
+🌎 Support Ecosystem
+💬 In-app Help AI — 24/7 (Blue Chat Bubble)
+📞 (877) 944-9010 | Mon–Fri, 5 AM–5 PM PST
+💬 Facebook: https://www.facebook.com/groups/HousecallPros/
+
+[If fully complete: Celebratory close — system is live.]
+[If follow-up still needed: Encouraging close — almost there.]
+
+Have a great week!
+Khira Warford
+Voice Onboarding Specialist | Housecall Pro
+khira.warford@housecallpro.com`;
+
+const TX_SYS=`You are reading a Zoom transcript from a Housecall Pro VoIP onboarding session run by Khira Warford. Extract everything you can from the transcript and generate three documents separated by these exact markers:
+===CALL_NOTES===
+===SALESFORCE===
+===EMAIL===
+
+Read the transcript carefully and extract:
+- Business name, pro name(s), who attended
+- Date and time zone (from timestamp or context)
+- What was covered (every topic discussed)
+- Porting situation (listen for mentions of current phone carrier, porting, keeping number, etc.)
+- Call flow setup details (simul-ring, voicemail, ring groups, IVR, call masking, CSR AI, etc.)
+- Any client quotes (exact words the client said — use in the Win From Today section)
+- Homework assigned
+- Any issues, concerns, or follow-up items
+- Pro's overall sentiment and reactions
+
+RECORDING: Never include consent language. Just note the pro was informed the Zoom would be recorded.
+
+For CALL NOTES: Use the appropriate format based on whether it's a welcome call or follow-up (detected from transcript or specified by user). Fill in every section as completely as possible from the transcript. Mark sections with ✓ if covered, leave blank/note if not covered.
+
+For SALESFORCE CRM PACKET:
+📌 BUSINESS NAME: [extracted from transcript]
+Org ID: [from user input or "— confirm in Salesforce"]
+Plan: [from user input]
+Voice Plan: [from user input]
+TZ: [extracted from transcript or user input]
+Add-Ons: VoIP ✓ | Call Tracking ✓
+Call Type: [Welcome Call or Follow-Up #N]
+
+👥 CONTACTS ON CALL:
+[extracted from transcript — names, roles, titles]
+
+📞 SESSION SUMMARY — [date extracted from transcript]
+Rep: Khira Warford
+
+WHAT WAS COVERED:
+• [detailed bullets from transcript]
+
+PORTING STATUS: [extracted]
+SETUP STATUS: [inferred from transcript — complete/partial/in progress]
+
+📌 HOMEWORK ASSIGNED:
+• [extracted from transcript]
+
+⚠️ FLAGS / ISSUES: [any problems, hesitations, or follow-ups mentioned]
+
+ACTION ITEMS:
+[extracted from transcript]
+
+NEXT STEPS: [extracted]
+Case Notes Subject: [DATE] VoIP Onboarding Call - ATTND
+
+For EMAIL: Write in Khira's warm, professional style with emoji section headers. Pull the client's actual name from the transcript. Use real quotes from the client in the Win From Today section if available. The email should feel personalized to THIS specific call, not generic. Include all standard resource links and support info.`;
+
+let history=[];
+let callType='welcome';
+let callCount=0;
+
+function setCallType(t){
+  callType=t;
+  document.getElementById('ct-welcome').classList.toggle('selected',t==='welcome');
+  document.getElementById('ct-followup').classList.toggle('selected',t==='followup');
+  document.querySelectorAll('.follow-only').forEach(el=>el.classList.toggle('show',t==='followup'));
+}
+
+function switchTab(n){
+  const names=['chat','gen','tx','out'];
+  document.querySelectorAll('.tab').forEach((tab,i)=>tab.classList.toggle('active',names[i]===n));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(n+'-panel').classList.add('active');
+  if(n==='chat') scrollB();
+}
+
+function scrollB(){const m=document.getElementById('msgs');if(m)m.scrollTop=m.scrollHeight;}
+
+function addMsg(role,text){
+  const msgs=document.getElementById('msgs');
+  const row=document.createElement('div');row.className='mr '+role;
+  const av=document.createElement('div');av.className='mav '+role;
+  av.innerHTML=role==='ai'?'<i class="ti ti-headset"></i>':'<i class="ti ti-user"></i>';
+  const b=document.createElement('div');b.className='mb '+role;b.textContent=text;
+  if(role==='user'){row.appendChild(b);row.appendChild(av);}else{row.appendChild(av);row.appendChild(b);}
+  msgs.appendChild(row);scrollB();
+}
+
+function showTyp(show){
+  const t=document.getElementById('typ');const msgs=document.getElementById('msgs');
+  t.style.display=show?'flex':'none';if(show){msgs.appendChild(t);scrollB();}
+}
+
+async function sendChat(text){
+  if(!text.trim())return;
+  addMsg('user',text);history.push({role:'user',content:text});
+  document.getElementById('inp').value='';document.getElementById('inp').style.height='auto';
+  document.getElementById('sbtn').disabled=true;showTyp(true);
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:CHAT_SYS,messages:history})});
+    const d=await r.json();
+    const reply=d.content?.find(b=>b.type==='text')?.text||'Sorry, trouble responding — please try again.';
+    showTyp(false);addMsg('ai',reply);history.push({role:'assistant',content:reply});
+  }catch(e){showTyp(false);addMsg('ai','Connection error — check your internet and try again.');}
+  document.getElementById('sbtn').disabled=false;
+}
+
+function sc(t){document.getElementById('inp').value=t;sendChat(t);}
+
+function clearChat(){
+  history=[];document.getElementById('msgs').innerHTML='';
+  addMsg('ai','Chat cleared. Ready for your next call!');
+}
+
+function newCall(){
+  callCount++;history=[];
+  const msgs=document.getElementById('msgs');msgs.innerHTML='';
+  addMsg('ai','Starting fresh for call #'+callCount+'. All tabs reset and ready. Use Chat during the call, then Generate docs or Transcript after to produce all 3 documents.');
+  document.getElementById('hdr-sub').textContent='Khira Warford · Call #'+callCount;
+  ['g-biz','g-pro','g-org','g-who','g-notes','g-hw','g-issues','g-prev','g-outstanding','tx-org','tx-area'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('g-date').value='';
+  document.getElementById('g-status').value='Fully complete';
+  document.getElementById('g-port').value='Porting from VoIP';
+  document.getElementById('tx-st').textContent='';
+  document.getElementById('gen-st').textContent='';
+  document.getElementById('out-ph').style.display='block';
+  document.getElementById('out-ct').style.display='none';
+  setCallType('welcome');
+  switchTab('chat');
+}
+
+document.getElementById('sbtn').addEventListener('click',()=>sendChat(document.getElementById('inp').value));
+document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat(document.getElementById('inp').value);}});
+document.getElementById('inp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});
+
+function buildPayload(isFollowUp,sessionNum,biz,pro,orgId,plan,voice,tz,port,who,prev,outstanding,notes,hw,status,issues,date){
+  return `CALL TYPE: ${isFollowUp?'FOLLOW-UP CALL #'+sessionNum:'WELCOME CALL'}
+Business Name: ${biz}
+Pro / Primary Contact: ${pro}
+Org ID: ${orgId||'[Not provided]'}
+HCP Plan: ${plan}
+Voice Plan: ${voice}
+Date: ${date}
+Time Zone: ${tz}
+Who was on the call: ${who||'Khira Warford, '+pro}
+Porting situation: ${port}
+${isFollowUp?'Follow-up session number: '+sessionNum:''}
+${isFollowUp?'What was set up in prior session(s): '+(prev||'Standard initial VoIP setup completed.'):''}
+${isFollowUp?'Outstanding items entering this call: '+(outstanding||'Remaining call flow items.'):''}
+What was covered / key wins / customizations this session: ${notes||'Standard VoIP onboarding — call flow built, tested inbound/outbound, reviewed reporting.'}
+Homework assigned: ${hw||'Complete test calls and review call recordings.'}
+Setup status: ${status}
+Issues / escalations / pro sentiment: ${issues||'None'}`;
+}
+
+async function callAPI(sys,msg){
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:sys,messages:[{role:'user',content:msg}]})});
+  const d=await r.json();
+  return(d.content?.find(b=>b.type==='text')?.text||'').trim();
+}
+function setDoc(id,text){document.getElementById(id).textContent=text||'Could not generate - please try again.';}
+function showOutputs(source){
+  document.getElementById('out-source').textContent='Generated from: '+source+' - '+new Date().toLocaleTimeString();
+  document.getElementById('out-ph').style.display='none';
+  document.getElementById('out-ct').style.display='flex';
+  switchTab('out');
+}
+
+const NOTES_SYS=GEN_SYS+'\n\nIMPORTANT: Generate ONLY the call notes document. Nothing else. Make it complete and thorough.';
+const SF_SYS=GEN_SYS+'\n\nIMPORTANT: Generate ONLY the Salesforce CRM packet. Nothing else. Make it complete and thorough.';
+const EMAIL_SYS=GEN_SYS+'\n\nIMPORTANT: Generate ONLY the pro-facing recap email (subject line + full body). Nothing else. Write it complete in Khira\'s warm style with all emoji sections.';
+const TX_NOTES_SYS=TX_SYS+'\n\nIMPORTANT: Generate ONLY the call notes document from this transcript. Nothing else. Complete and thorough.';
+const TX_SF_SYS=TX_SYS+'\n\nIMPORTANT: Generate ONLY the Salesforce CRM packet from this transcript. Nothing else. Complete and thorough.';
+const TX_EMAIL_SYS=TX_SYS+'\n\nIMPORTANT: Generate ONLY the pro-facing recap email from this transcript (subject line + full body). Nothing else. Complete, warm, in Khira\'s style with all emoji sections. Pull real client quotes from the transcript for the Win From Today section.';
+
+async function generateDocs(){
+  const biz=document.getElementById('g-biz').value.trim();
+  const pro=document.getElementById('g-pro').value.trim();
+  if(!biz||!pro){document.getElementById('gen-st').textContent='Please fill in Business Name and Pro Name at minimum.';return;}
+  const dateVal=document.getElementById('g-date').value;
+  const dateStr=dateVal?new Date(dateVal+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const sessionNum=document.getElementById('g-session').value;
+  const isFollowUp=callType==='followup';
+  const payload=buildPayload(isFollowUp,sessionNum,biz,pro,
+    document.getElementById('g-org').value,
+    document.getElementById('g-plan').value,
+    document.getElementById('g-voice').value,
+    document.getElementById('g-tz').value,
+    document.getElementById('g-port').value,
+    document.getElementById('g-who').value,
+    document.getElementById('g-prev').value,
+    document.getElementById('g-outstanding').value,
+    document.getElementById('g-notes').value,
+    document.getElementById('g-hw').value,
+    document.getElementById('g-status').value,
+    document.getElementById('g-issues').value,
+    dateStr);
+  const btn=document.getElementById('gen-btn');const st=document.getElementById('gen-st');
+  btn.disabled=true;
+  try{
+    st.textContent='(1/3) Generating call notes...';
+    setDoc('ob-notes',await callAPI(NOTES_SYS,'Generate the call notes for this session:\n\n'+payload));
+    st.textContent='(2/3) Generating Salesforce packet...';
+    setDoc('ob-sf',await callAPI(SF_SYS,'Generate the Salesforce CRM packet for this session:\n\n'+payload));
+    st.textContent='(3/3) Generating recap email...';
+    setDoc('ob-email',await callAPI(EMAIL_SYS,'Generate the pro-facing recap email for this session:\n\n'+payload));
+    showOutputs('manual form');
+    st.textContent='All 3 documents ready in the Outputs tab.';
+  }catch(e){st.textContent='Error - please check your connection and try again.';}
+  btn.disabled=false;
+}
+
+async function generateFromTranscript(){
+  const transcript=document.getElementById('tx-area').value.trim();
+  if(!transcript||transcript.length<100){document.getElementById('tx-st').textContent='Please paste a transcript first.';return;}
+  const org=document.getElementById('tx-org').value.trim();
+  const plan=document.getElementById('tx-plan').value;
+  const voice=document.getElementById('tx-voice').value;
+  const ctVal=document.getElementById('tx-calltype').value;
+  const callTypeLabel=ctVal==='welcome'?'Welcome Call':ctVal==='followup2'?'Follow-Up Call #2':ctVal==='followup3'?'Follow-Up Call #3':'Follow-Up Call #4';
+  const ctx='Additional context:\n- Call type: '+callTypeLabel+'\n- Org ID: '+(org||'Not provided - confirm in Salesforce')+'\n- HCP Plan: '+plan+'\n- Voice Plan: '+voice+'\n\nTRANSCRIPT:\n'+transcript;
+  const btn=document.getElementById('tx-btn');const st=document.getElementById('tx-st');
+  btn.disabled=true;
+  try{
+    st.textContent='(1/3) Reading transcript - generating call notes...';
+    setDoc('ob-notes',await callAPI(TX_NOTES_SYS,'Generate the call notes from this transcript.\n\n'+ctx));
+    st.textContent='(2/3) Generating Salesforce packet...';
+    setDoc('ob-sf',await callAPI(TX_SF_SYS,'Generate the Salesforce CRM packet from this transcript.\n\n'+ctx));
+    st.textContent='(3/3) Generating recap email...';
+    setDoc('ob-email',await callAPI(TX_EMAIL_SYS,'Generate the pro-facing recap email from this transcript.\n\n'+ctx));
+    showOutputs('Zoom transcript');
+    st.textContent='All 3 documents ready in the Outputs tab.';
+  }catch(e){st.textContent='Error - please check your connection and try again.';}
+  btn.disabled=false;
+}
+
+function doCopy(id,btn){
+  navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>{
+    btn.textContent='Copied!';btn.classList.add('done');
+    setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('done');},2000);
+  });
+}
+</script>
+</body>
+</html>
